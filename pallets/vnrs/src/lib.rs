@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::unused_unit)]
 
 pub use pallet::*;
 
@@ -128,7 +129,7 @@ pub mod pallet {
                         owner: account_id,
                         tried: who,
                     });
-                    Err(Error::<T>::AlreadyReserved)?
+                    Err(Error::<T>::AlreadyReserved.into())
                 }
                 Ok((account_id, lock_id, deadline)) if deadline > now => {
                     T::Currency::remove_lock(lock_id, &account_id);
@@ -169,13 +170,13 @@ pub mod pallet {
                 }
                 Ok((account_id, _lock_id, deadline)) if deadline >= now => {
                     Self::deposit_event(Event::WrongOwnershipRegisterTry {
-                        vanity_name: vanity_name.clone(),
+                        vanity_name,
                         owner: account_id,
                         tried: who,
                     });
-                    Err(Error::<T>::WrongReservationOwnership)?
+                    Err(Error::<T>::WrongReservationOwnership.into())
                 }
-                _ => Err(Error::<T>::NoReservation)?,
+                _ => Err(Error::<T>::NoReservation.into()),
             }
         }
 
@@ -197,10 +198,10 @@ pub mod pallet {
                 }
                 Ok((account_id, lock_id, deadline)) if deadline < now => {
                     Self::unregister_name(account_id, lock_id, vanity_name)?;
-                    Err(Error::<T>::NoRegistrationForRefresh)?
+                    Err(Error::<T>::NoRegistrationForRefresh.into())
                 }
-                Ok(_) => Err(Error::<T>::WrongRegistrationOwnership)?,
-                Err(_) => Err(Error::<T>::NoRegistrationForRefresh)?,
+                Ok(_) => Err(Error::<T>::WrongRegistrationOwnership.into()),
+                Err(_) => Err(Error::<T>::NoRegistrationForRefresh.into()),
             }
         }
     }
@@ -218,11 +219,11 @@ pub mod pallet {
             match <VanityNameStorage<T>>::try_get(&vanity_name) {
                 Ok((account_id, _lock_id, deadline)) if deadline >= now => {
                     Self::deposit_event(Event::ReRegisterTry {
-                        vanity_name: vanity_name.clone(),
+                        vanity_name,
                         owner: account_id,
                         tried: who,
                     });
-                    Err(Error::<T>::AlreadyRegistered)?
+                    Err(Error::<T>::AlreadyRegistered)
                 }
 
                 Ok((account_id, lock_id, deadline)) if deadline < now => {
@@ -249,13 +250,13 @@ pub mod pallet {
             );
             T::Currency::extend_lock(
                 lock_id,
-                &&account_id,
+                &account_id,
                 BalanceOf::<T>::from(vanity_name.len() as u32) * T::RegistrationOneByteCost::get(),
                 WithdrawReasons::RESERVE,
             );
             Self::deposit_event(Event::VanityNameRegistered {
-                name: vanity_name.clone(),
-                owner: account_id.clone(),
+                name: vanity_name,
+                owner: account_id,
             });
         }
 
@@ -264,7 +265,7 @@ pub mod pallet {
         fn reservate_name(account_id: T::AccountId, hashed_vanity_name: HashedVanityName) {
             let lock_id = T::LockIdentifierSource::next_lock_id();
             <VanityNameReservationStorage<T>>::insert(
-                hashed_vanity_name.clone(),
+                hashed_vanity_name,
                 (
                     account_id.clone(),
                     lock_id,
